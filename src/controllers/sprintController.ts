@@ -65,3 +65,17 @@ export const getSprintFeedbacks = async (
   
     return res.status(200).json({ feedbacks: sorted });
 };
+
+export const getTeamSprints = async (req: Request, res: Response): Promise<any> => {
+    const { teamId } = req.params;
+  
+    const snapshot = await db
+      .collection('sprints')
+      .where('teamId', '==', teamId)
+      .where('status', '==', 'active')
+      .get();
+  
+    const sprints = snapshot.docs.map(doc => doc.data());
+  
+    res.status(200).json({ sprints });
+};  
