@@ -12,12 +12,10 @@ dotenv.config();
 
 const app = express();
 
-// Middlewares
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
 
-// Routes
 app.get('/', (_, res) => {
   res.json({ message: 'SprintFlow backend is running!' });
 });
