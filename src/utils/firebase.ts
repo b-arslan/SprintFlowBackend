@@ -1,8 +1,10 @@
 import admin from 'firebase-admin';
-import * as serviceAccount from '../../sprintflow-ca441-firebase-adminsdk-fbsvc-9d073ab230.json';
+
+const decodedCred = Buffer.from(process.env.FIREBASE_CREDENTIAL_BASE64!, 'base64').toString();
+const serviceAccount = JSON.parse(decodedCred);
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
+  credential: admin.credential.cert(serviceAccount)
 });
 
 export const db = admin.firestore();
