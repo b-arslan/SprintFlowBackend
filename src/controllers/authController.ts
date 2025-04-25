@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const JWT_SECRET = process.env.JWT_SECRET || "";
 
 // register controller
 export const register = async (req: Request, res: Response): Promise<any> => {
@@ -33,7 +33,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         email,
         name,
         passwordHash,
-        joinedRetros: [], // boş başlatılıyor
+        joinedRetros: [],
     });
 
     res.status(201).json({ message: "User registered successfully" });
