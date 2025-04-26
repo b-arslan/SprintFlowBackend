@@ -1,10 +1,12 @@
-import admin from 'firebase-admin';
+import { initializeApp, cert } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
-const decodedCred = Buffer.from(process.env.FIREBASE_CREDENTIAL_BASE64!, 'base64').toString();
-const serviceAccount = JSON.parse(decodedCred);
+const firebaseCredential = JSON.parse(
+  Buffer.from(process.env.FIREBASE_CREDENTIAL_BASE64!, 'base64').toString('utf8')
+);
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+const app = initializeApp({
+  credential: cert(firebaseCredential),
 });
 
-export const db = admin.firestore();
+export const db = getFirestore(app);
