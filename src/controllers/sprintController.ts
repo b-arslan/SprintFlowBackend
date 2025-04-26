@@ -92,47 +92,72 @@ export const joinSprint = async (
 export const getSprintFeedbacks = async (
     req: AuthenticatedRequest,
     res: Response
-  ): Promise<any> => {
+): Promise<any> => {
     const { sprintId } = req.params;
     const { sort } = req.query;
-  
+
     if (!sprintId) {
-      return res.status(400).json({ success: false, error: "Sprint ID is required." });
+        return res
+            .status(400)
+            .json({ success: false, error: "Sprint ID is required." });
     }
-  
-    // Sprint bilgisi al
-    const sprintDoc = await db.collection("sprints").doc(sprintId).get();
-    if (!sprintDoc.exists) {
-      return res.status(404).json({ success: false, error: "Sprint not found." });
+
+    try {
+        // Sprint bilgisi al
+        const sprintDoc = await db.collection("sprints").doc(sprintId).get();
+        if (!sprintDoc.exists) {
+            return res
+                .status(404)
+                .json({ success: false, error: "Sprint not found." });
+        }
+        const sprintData = sprintDoc.data();
+
+        // Feedbackler al
+        const snapshot = await db
+            .collection("feedbacks")
+            .where("sprintId", "==", sprintId)
+            .get();
+
+        const feedbacks = snapshot.docs.map((doc) => doc.data());
+
+        // distinct createdBy
+        const participants = Array.from(
+            new Set(feedbacks.map((fb) => fb.createdBy).filter(Boolean))
+        );
+
+        // Feedbackleri sıralama
+        let sortedFeedbacks = feedbacks;
+        if (sort === "upvotes") {
+            sortedFeedbacks = feedbacks.sort(
+                (a, b) => (b.upvotes || 0) - (a.upvotes || 0)
+            );
+        } else {
+            sortedFeedbacks = feedbacks.sort(
+                (a, b) =>
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime()
+            );
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                id: sprintDoc.id,
+                ...sprintData,
+                participants,
+                feedbacks: sortedFeedbacks,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching sprint feedbacks:", error);
+        return res
+            .status(500)
+            .json({
+                success: false,
+                error: "Failed to fetch sprint feedbacks.",
+            });
     }
-    const sprintData = sprintDoc.data();
-  
-    // Feedbackler al
-    const snapshot = await db
-      .collection("feedbacks")
-      .where("sprintId", "==", sprintId)
-      .get();
-  
-    const feedbacks = snapshot.docs.map((doc) => doc.data());
-  
-    let sortedFeedbacks = feedbacks;
-    if (sort === "upvotes") {
-      sortedFeedbacks = feedbacks.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
-    } else {
-      sortedFeedbacks = feedbacks.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    }
-  
-    res.status(200).json({
-      success: true,
-      data: {
-        ...sprintData,
-        feedbacks: sortedFeedbacks,
-      },
-    });
-};  
+};
 
 export const getMyJoinedSprints = async (
     req: AuthenticatedRequest,
