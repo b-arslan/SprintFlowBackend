@@ -125,3 +125,50 @@ export const getSprintFeedbacks = async (
         data: sorted,
     });
 };
+
+export const getMyJoinedSprints = async (
+    req: AuthenticatedRequest,
+    res: Response
+): Promise<any> => {
+    const email = req.userEmail;
+
+    if (!email) {
+        return res
+            .status(403)
+            .json({ success: false, error: "Authentication error" });
+    }
+
+    const userDoc = await db.collection("users").doc(email).get();
+    if (!userDoc.exists) {
+        return res
+            .status(404)
+            .json({ success: false, error: "User not found" });
+    }
+
+    const userData = userDoc.data();
+    const joinedRetros: string[] = userData?.joinedRetros || [];
+
+    if (joinedRetros.length === 0) {
+        return res.status(200).json({ success: true, data: [] });
+    }
+
+    const sprintsData = await Promise.all(
+        joinedRetros.map(async (sprintId) => {
+            const sprintDoc = await db
+                .collection("sprints")
+                .doc(sprintId)
+                .get();
+            if (sprintDoc.exists) {
+                return sprintDoc.data();
+            }
+            return null;
+        })
+    );
+
+    const filteredSprints = sprintsData.filter((sprint) => sprint !== null);
+
+    res.status(200).json({
+        success: true,
+        data: filteredSprints,
+    });
+};
