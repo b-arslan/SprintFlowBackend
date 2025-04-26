@@ -92,39 +92,47 @@ export const joinSprint = async (
 export const getSprintFeedbacks = async (
     req: AuthenticatedRequest,
     res: Response
-): Promise<any> => {
+  ): Promise<any> => {
     const { sprintId } = req.params;
     const { sort } = req.query;
-
+  
     if (!sprintId) {
-        return res
-            .status(400)
-            .json({ success: false, error: "Sprint ID is required." });
+      return res.status(400).json({ success: false, error: "Sprint ID is required." });
     }
-
+  
+    // Sprint bilgisi al
+    const sprintDoc = await db.collection("sprints").doc(sprintId).get();
+    if (!sprintDoc.exists) {
+      return res.status(404).json({ success: false, error: "Sprint not found." });
+    }
+    const sprintData = sprintDoc.data();
+  
+    // Feedbackler al
     const snapshot = await db
-        .collection("feedbacks")
-        .where("sprintId", "==", sprintId)
-        .get();
-
+      .collection("feedbacks")
+      .where("sprintId", "==", sprintId)
+      .get();
+  
     const feedbacks = snapshot.docs.map((doc) => doc.data());
-
-    let sorted = feedbacks;
+  
+    let sortedFeedbacks = feedbacks;
     if (sort === "upvotes") {
-        sorted = feedbacks.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+      sortedFeedbacks = feedbacks.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
     } else {
-        sorted = feedbacks.sort(
-            (a, b) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime()
-        );
+      sortedFeedbacks = feedbacks.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
     }
-
+  
     res.status(200).json({
-        success: true,
-        data: sorted,
+      success: true,
+      data: {
+        ...sprintData,
+        feedbacks: sortedFeedbacks,
+      },
     });
-};
+};  
 
 export const getMyJoinedSprints = async (
     req: AuthenticatedRequest,
