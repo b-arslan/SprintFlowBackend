@@ -8,7 +8,7 @@ const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    origin: 'https://sprint-flow-frontend.vercel.app/',
     methods: ['GET', 'POST'],
   }
 });
