@@ -45,26 +45,26 @@ export const voteFeedback = async (
     const feedback = feedbackDoc.data();
 
     if (feedback?.createdBy === email) {
-        return res.status(400).json({
-            success: false,
-            error: "You cannot vote on your own feedback.",
-        });
+        return res
+            .status(400)
+            .json({
+                success: false,
+                error: "You cannot vote on your own feedback.",
+            });
     }
 
     const prevVote = prevVoteDoc.exists ? prevVoteDoc.data()?.vote : 0;
 
     if (prevVote === voteInt) {
-        return res.status(400).json({
-            success: false,
-            error: "You already voted this way.",
-        });
+        return res
+            .status(400)
+            .json({ success: false, error: "You already voted this way." });
     }
 
     const upvotes =
         (feedback?.upvotes || 0) +
         (voteInt === 1 ? 1 : 0) -
         (prevVote === 1 ? 1 : 0);
-
     const downvotes =
         (feedback?.downvotes || 0) +
         (voteInt === -1 ? 1 : 0) -
@@ -73,7 +73,7 @@ export const voteFeedback = async (
     await voteRef.set({ sprintId, voter: email, feedbackId, vote: voteInt });
     await feedbackRef.update({ upvotes, downvotes });
 
-    io.emit("feedbackUpdated", { sprintId });
+    io.emit("new_vote", { sprintId, feedbackId, upvotes, downvotes });
 
     res.status(200).json({
         success: true,

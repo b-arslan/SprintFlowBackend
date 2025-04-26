@@ -1,18 +1,26 @@
 import app from './app';
-import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { createServer } from 'http';
 
 const PORT = process.env.PORT || 5000;
 
-const httpServer = createServer(app);
+const server = createServer(app);
 
-export const io = new Server(httpServer, {
-  cors: {
-    origin: 'https://sprint-flow-frontend.vercel.app/',
-    methods: ['GET', 'POST'],
-  }
+export const io = new Server(server, {
+    cors: {
+        origin: "https://sprint-flow-frontend.vercel.app/",
+        methods: ["GET", "POST"]
+    }
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`Server and WebSocket running on port ${PORT}`);
+io.on('connection', (socket) => {
+    console.log(`Bir kullanıcı bağlandı: ${socket.id}`);
+
+    socket.on('disconnect', () => {
+        console.log(`Kullanıcı ayrıldı: ${socket.id}`);
+    });
+});
+
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });

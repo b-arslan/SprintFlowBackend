@@ -24,6 +24,7 @@ export const submitFeedback = async (
 
     const { sprintId, start, stop } = result.data;
     const continueDoing = result.data["continue"];
+
     const email = req.userEmail;
 
     if (!email) {
@@ -35,12 +36,11 @@ export const submitFeedback = async (
     if (!start && !stop && !continueDoing) {
         return res.status(400).json({
             success: false,
-            error: "At least one feedback field must be filled.",
+            error: "En az bir feedback alanı doldurulmalıdır.",
         });
     }
 
     const feedbackId = `fdb_${uuidv4().slice(0, 8)}`;
-
     await db
         .collection("feedbacks")
         .doc(feedbackId)
@@ -56,7 +56,7 @@ export const submitFeedback = async (
             createdAt: new Date().toISOString(),
         });
 
-    io.emit("feedbackUpdated", { sprintId });
+    io.emit("new_feedback", { sprintId, feedbackId });
 
     res.status(201).json({
         success: true,
