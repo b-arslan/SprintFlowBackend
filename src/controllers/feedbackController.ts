@@ -10,17 +10,20 @@ export const submitFeedback = async (
 ): Promise<any> => {
     const schema = z.object({
         sprintId: z.string().min(5),
-        start: z.string().min(5),
-        stop: z.string().min(5),
-        continue: z.string().min(5),
+        start: z.string().optional(),
+        stop: z.string().optional(),
+        continue: z.string().optional(),
     });
 
     const result = schema.safeParse(req.body);
+
     if (!result.success) {
         return res.status(400).json({ success: false, error: "Invalid input" });
     }
 
-    const { sprintId, start, stop, continue: continueDoing } = result.data;
+    const { sprintId, start, stop } = result.data;
+    const continueDoing = result.data["continue"];
+
     const email = req.userEmail;
 
     if (!email) {
@@ -29,18 +32,28 @@ export const submitFeedback = async (
             .json({ success: false, error: "Authentication error" });
     }
 
+    if (!start && !stop && !continueDoing) {
+        return res.status(400).json({
+            success: false,
+            error: "En az bir feedback alanı doldurulmalıdır.",
+        });
+    }
+
     const feedbackId = `fdb_${uuidv4().slice(0, 8)}`;
-    await db.collection("feedbacks").doc(feedbackId).set({
-        id: feedbackId,
-        sprintId,
-        createdBy: email,
-        start,
-        stop,
-        continue: continueDoing,
-        upvotes: 0,
-        downvotes: 0,
-        createdAt: new Date().toISOString(),
-    });
+    await db
+        .collection("feedbacks")
+        .doc(feedbackId)
+        .set({
+            id: feedbackId,
+            sprintId,
+            createdBy: email,
+            start: start || null,
+            stop: stop || null,
+            continue: continueDoing || null,
+            upvotes: 0,
+            downvotes: 0,
+            createdAt: new Date().toISOString(),
+        });
 
     res.status(201).json({
         success: true,
