@@ -120,10 +120,13 @@ export const getSprintFeedbacks = async (
 
         const feedbacks = snapshot.docs.map((doc) => doc.data());
 
-        // distinct createdBy
-        const participants = Array.from(
-            new Set(feedbacks.map((fb) => fb.createdBy).filter(Boolean))
-        );
+        const participantSet = new Set<string>();
+        feedbacks.forEach((fb) => {
+            if (fb.createdBy) {
+                participantSet.add(fb.createdBy);
+            }
+        });
+        const participants = Array.from(participantSet);
 
         // Feedbackleri sıralama
         let sortedFeedbacks = feedbacks;
@@ -150,12 +153,10 @@ export const getSprintFeedbacks = async (
         });
     } catch (error) {
         console.error("Error fetching sprint feedbacks:", error);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                error: "Failed to fetch sprint feedbacks.",
-            });
+        return res.status(500).json({
+            success: false,
+            error: "Failed to fetch sprint feedbacks.",
+        });
     }
 };
 
