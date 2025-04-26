@@ -29,6 +29,20 @@ export const createSprint = async (
             .json({ success: false, error: "Authentication error" });
     }
 
+    // 📌 Aynı title ile sprint var mı kontrolü ekliyoruz
+    const existingSprintSnapshot = await db
+        .collection("sprints")
+        .where("title", "==", title)
+        .limit(1)
+        .get();
+
+    if (!existingSprintSnapshot.empty) {
+        return res.status(400).json({
+            success: false,
+            error: "Sprint with this title already exists.",
+        });
+    }
+
     const sprintId = uuidv4();
 
     await db
