@@ -16,7 +16,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
 
     const result = schema.safeParse(req.body);
     if (!result.success) {
-        return res.status(400).json({ error: "Invalid input" });
+        return res.status(400).json({ success: false, error: "Invalid input" });
     }
 
     const { email, name, password } = result.data;
@@ -24,7 +24,9 @@ export const register = async (req: Request, res: Response): Promise<any> => {
     const userRef = db.collection("users").doc(email);
     const existingUser = await userRef.get();
     if (existingUser.exists) {
-        return res.status(400).json({ error: "User already exists" });
+        return res
+            .status(400)
+            .json({ success: false, error: "User already exists" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -36,7 +38,10 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         joinedRetros: [],
     });
 
-    res.status(201).json({ message: "User registered successfully" });
+    res.status(201).json({
+        success: true,
+        message: "User registered successfully.",
+    });
 };
 
 // login controller
@@ -48,7 +53,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
     const result = schema.safeParse(req.body);
     if (!result.success) {
-        return res.status(400).json({ error: "Invalid input" });
+        return res.status(400).json({ success: false, error: "Invalid input" });
     }
 
     const { email, password } = result.data;
@@ -57,16 +62,27 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-        return res.status(401).json({ error: "User not found" });
+        return res
+            .status(401)
+            .json({ success: false, error: "User not found" });
     }
 
     const userData = userSnap.data();
     const isMatch = await bcrypt.compare(password, userData?.passwordHash);
     if (!isMatch) {
-        return res.status(401).json({ error: "Invalid password" });
+        return res
+            .status(401)
+            .json({ success: false, error: "Invalid password" });
     }
 
     const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "7d" });
 
-    res.json({ token, name: userData?.name });
+    res.status(200).json({
+        success: true,
+        message: "Login successful.",
+        data: {
+            token,
+            name: userData?.name || "",
+        },
+    });
 };
