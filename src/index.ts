@@ -21,6 +21,9 @@ io.on("connection", (socket) => {
     socket.on("join_retro", ({ sprintId, userEmail }) => {
         if (!sprintId || !userEmail) return;
 
+        socket.data.userEmail = userEmail;
+        socket.data.sprintId = sprintId;
+
         if (!activeUsers[sprintId]) {
             activeUsers[sprintId] = new Set();
         }
@@ -28,14 +31,11 @@ io.on("connection", (socket) => {
 
         console.log(`${userEmail} retrosuna katıldı: ${sprintId}`);
 
+        socket.join(sprintId);
         io.to(sprintId).emit(
             "active_participants",
             Array.from(activeUsers[sprintId])
         );
-
-        socket.join(sprintId);
-
-        socket.emit("active_participants", Array.from(activeUsers[sprintId]));
     });
 
     socket.on("leave_retro", ({ sprintId, userEmail }) => {
@@ -43,7 +43,6 @@ io.on("connection", (socket) => {
 
         if (activeUsers[sprintId]) {
             activeUsers[sprintId].delete(userEmail);
-
             console.log(`${userEmail} retrosundan ayrıldı: ${sprintId}`);
 
             io.to(sprintId).emit(
@@ -55,15 +54,20 @@ io.on("connection", (socket) => {
         socket.leave(sprintId);
     });
 
-    socket.on("disconnecting", () => {
-        for (const sprintId of socket.rooms) {
-            if (activeUsers[sprintId]) {
-                console.log(`Socket rooms'dan ayrılıyor: ${sprintId}`);
-            }
-        }
-    });
-
     socket.on("disconnect", () => {
+        const sprintId = socket.data.sprintId;
+        const userEmail = socket.data.userEmail;
+
+        if (sprintId && userEmail && activeUsers[sprintId]) {
+            activeUsers[sprintId].delete(userEmail);
+            console.log(`${userEmail} retrosundan disconnect ile ayrıldı.`);
+
+            io.to(sprintId).emit(
+                "active_participants",
+                Array.from(activeUsers[sprintId])
+            );
+        }
+
         console.log(`Kullanıcı ayrıldı: ${socket.id}`);
     });
 });
