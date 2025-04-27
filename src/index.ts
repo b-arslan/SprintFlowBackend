@@ -21,6 +21,8 @@ io.on("connection", (socket) => {
     socket.on("join_retro", ({ sprintId, userEmail }) => {
         if (!sprintId || !userEmail) return;
 
+        socket.join(sprintId);
+
         socket.data.userEmail = userEmail;
         socket.data.sprintId = sprintId;
 
@@ -31,7 +33,6 @@ io.on("connection", (socket) => {
 
         console.log(`${userEmail} retrosuna katıldı: ${sprintId}`);
 
-        socket.join(sprintId);
         io.to(sprintId).emit(
             "active_participants",
             Array.from(activeUsers[sprintId])
