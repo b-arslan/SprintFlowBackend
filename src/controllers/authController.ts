@@ -94,6 +94,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         data: {
             token,
             name: userData?.name || "",
+            email: userData?.email || ""
         },
     });
 };
