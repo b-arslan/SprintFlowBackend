@@ -38,9 +38,20 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         joinedRetros: [],
     });
 
+    // 🔥 Burada token üretiyoruz
+    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "1d" });
+
     res.status(201).json({
         success: true,
         message: "User registered successfully.",
+        data: {
+            token,
+            user: {
+                id: "",
+                name,
+                email,
+            },
+        },
     });
 };
 
