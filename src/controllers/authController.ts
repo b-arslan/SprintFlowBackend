@@ -75,7 +75,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
             .json({ success: false, error: "Invalid password" });
     }
 
-    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "1d" });
 
     res.status(200).json({
         success: true,
