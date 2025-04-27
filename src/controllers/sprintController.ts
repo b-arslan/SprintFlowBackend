@@ -92,12 +92,36 @@ export const joinSprint = async (
             .json({ success: false, error: "Authentication error" });
     }
 
+    const sprintRef = db.collection("sprints").doc(sprintId);
+    const sprintSnap = await sprintRef.get();
+
+    if (!sprintSnap.exists) {
+        return res
+            .status(404)
+            .json({ success: false, error: "Sprint not found" });
+    }
+
+    const sprintData = sprintSnap.data();
+
+    if (sprintData?.bannedParticipants?.includes(email)) {
+        return res
+            .status(403)
+            .json({
+                success: false,
+                error: "You are banned from this sprint.",
+            });
+    }
+
     const userRef = db.collection("users").doc(email);
     await userRef.update({
         joinedRetros: FieldValue.arrayUnion(sprintId),
     });
 
-    res.status(200).json({
+    await sprintRef.update({
+        participants: FieldValue.arrayUnion(email),
+    });
+
+    return res.status(200).json({
         success: true,
         message: "Joined sprint successfully.",
     });
@@ -219,4 +243,106 @@ export const getMyJoinedSprints = async (
         success: true,
         data: filteredSprints,
     });
+};
+
+export const kickParticipant = async (
+    req: AuthenticatedRequest,
+    res: Response
+): Promise<any> => {
+    const { sprintId } = req.params;
+    const { email } = req.body;
+
+    if (!sprintId || !email) {
+        return res.status(400).json({
+            success: false,
+            error: "Sprint ID and email are required.",
+        });
+    }
+
+    const adminEmail = req.userEmail;
+    if (!adminEmail) {
+        return res
+            .status(403)
+            .json({ success: false, error: "Authentication error." });
+    }
+
+    const sprintRef = db.collection("sprints").doc(sprintId);
+    const sprintSnap = await sprintRef.get();
+
+    if (!sprintSnap.exists) {
+        return res
+            .status(404)
+            .json({ success: false, error: "Sprint not found." });
+    }
+
+    const sprintData = sprintSnap.data();
+    if (sprintData?.createdBy !== adminEmail) {
+        return res.status(403).json({
+            success: false,
+            error: "Only admin can kick participants.",
+        });
+    }
+
+    const updatedParticipants = (sprintData.participants || []).filter(
+        (participant: string) => participant !== email
+    );
+
+    await sprintRef.update({ participants: updatedParticipants });
+
+    return res
+        .status(200)
+        .json({ success: true, message: "Participant kicked successfully." });
+};
+
+export const banParticipant = async (
+    req: AuthenticatedRequest,
+    res: Response
+): Promise<any> => {
+    const { sprintId } = req.params;
+    const { email } = req.body;
+
+    if (!sprintId || !email) {
+        return res.status(400).json({
+            success: false,
+            error: "Sprint ID and email are required.",
+        });
+    }
+
+    const adminEmail = req.userEmail;
+    if (!adminEmail) {
+        return res
+            .status(403)
+            .json({ success: false, error: "Authentication error." });
+    }
+
+    const sprintRef = db.collection("sprints").doc(sprintId);
+    const sprintSnap = await sprintRef.get();
+
+    if (!sprintSnap.exists) {
+        return res
+            .status(404)
+            .json({ success: false, error: "Sprint not found." });
+    }
+
+    const sprintData = sprintSnap.data();
+    if (sprintData?.createdBy !== adminEmail) {
+        return res.status(403).json({
+            success: false,
+            error: "Only admin can ban participants.",
+        });
+    }
+
+    const updatedParticipants = (sprintData.participants || []).filter(
+        (participant: string) => participant !== email
+    );
+    const updatedBanned = [...(sprintData.bannedParticipants || []), email];
+
+    await sprintRef.update({
+        participants: updatedParticipants,
+        bannedParticipants: updatedBanned,
+    });
+
+    return res
+        .status(200)
+        .json({ success: true, message: "Participant banned successfully." });
 };
