@@ -104,12 +104,10 @@ export const joinSprint = async (
     const sprintData = sprintSnap.data();
 
     if (sprintData?.bannedParticipants?.includes(email)) {
-        return res
-            .status(403)
-            .json({
-                success: false,
-                error: "You are banned from this sprint.",
-            });
+        return res.status(403).json({
+            success: false,
+            error: "You are banned from this sprint.",
+        });
     }
 
     const userRef = db.collection("users").doc(email);
@@ -345,4 +343,45 @@ export const banParticipant = async (
     return res
         .status(200)
         .json({ success: true, message: "Participant banned successfully." });
+};
+
+export const updateExpiredSprints = async (
+    res: Response
+): Promise<any> => {
+    try {
+        const now = new Date();
+
+        const activeSprintsSnapshot = await db
+            .collection("sprints")
+            .where("status", "==", "active")
+            .get();
+
+        const batch = db.batch();
+        let expiredCount = 0;
+
+        activeSprintsSnapshot.forEach((doc) => {
+            const sprintData = doc.data();
+            const expiresAt = new Date(sprintData.expiresAt);
+
+            if (expiresAt < now) {
+                batch.update(doc.ref, { status: "expired" });
+                expiredCount++;
+            }
+        });
+
+        if (expiredCount > 0) {
+            await batch.commit();
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `${expiredCount} sprint(s) expired.`,
+        });
+    } catch (error) {
+        console.error("Error updating expired sprints:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Failed to update expired sprints.",
+        });
+    }
 };
