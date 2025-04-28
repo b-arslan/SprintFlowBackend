@@ -17,38 +17,38 @@ const activeUsers: Record<string, Set<string>> = {};
 io.on("connection", (socket) => {
     console.log(`Bir kullanıcı bağlandı: ${socket.id}`);
 
-    socket.on("join_retro", ({ sprintId, userEmail }) => {
-        if (!sprintId || !userEmail) return;
+    socket.on("join_retro", ({ retroId, email }) => {
+        if (!retroId || !email) return;
 
-        socket.join(sprintId);
+        socket.join(retroId);
 
-        if (!activeUsers[sprintId]) {
-            activeUsers[sprintId] = new Set();
+        if (!activeUsers[retroId]) {
+            activeUsers[retroId] = new Set();
         }
-        activeUsers[sprintId].add(userEmail);
+        activeUsers[retroId].add(email);
 
-        console.log(`${userEmail} retrosuna katıldı: ${sprintId}`);
+        console.log(`${email} retrosuna katıldı: ${retroId}`);
 
-        io.to(sprintId).emit(
+        io.to(retroId).emit(
             "active_participants",
-            Array.from(activeUsers[sprintId])
+            Array.from(activeUsers[retroId])
         );
     });
 
-    socket.on("leave_retro", ({ sprintId, userEmail }) => {
-        if (!sprintId || !userEmail) return;
+    socket.on("leave_retro", ({ retroId, email }) => {
+        if (!retroId || !email) return;
 
-        if (activeUsers[sprintId]) {
-            activeUsers[sprintId].delete(userEmail);
-            console.log(`${userEmail} retrosundan ayrıldı: ${sprintId}`);
+        if (activeUsers[retroId]) {
+            activeUsers[retroId].delete(email);
+            console.log(`${email} retrosundan ayrıldı: ${retroId}`);
 
-            io.to(sprintId).emit(
+            io.to(retroId).emit(
                 "active_participants",
-                Array.from(activeUsers[sprintId])
+                Array.from(activeUsers[retroId])
             );
         }
 
-        socket.leave(sprintId);
+        socket.leave(retroId);
     });
 
     socket.on("disconnecting", () => {
