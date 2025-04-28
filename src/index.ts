@@ -17,42 +17,46 @@ const activeUsers: Record<string, Set<string>> = {};
 io.on("connection", (socket) => {
     console.log(`Bir kullanıcı bağlandı: ${socket.id}`);
 
-    socket.on("join_retro", ({ retroId, email }) => {
-        if (!retroId || !email) return;
+    socket.on("join_retro", ({ sprintId, userEmail }) => {
+        if (!sprintId || !userEmail) return;
 
-        socket.join(retroId);
+        socket.join(sprintId);
 
-        if (!activeUsers[retroId]) {
-            activeUsers[retroId] = new Set();
+        if (!activeUsers[sprintId]) {
+            activeUsers[sprintId] = new Set();
         }
-        activeUsers[retroId].add(email);
+        activeUsers[sprintId].add(userEmail);
 
-        console.log(`${email} retrosuna katıldı: ${retroId}`);
+        console.log(`${userEmail} retrosuna katıldı: ${sprintId}`);
 
-        const activeList = Array.from(activeUsers[retroId]);
-
-        io.to(retroId).emit("active_participants", activeList);
-
-        socket.emit("active_participants", activeList);
+        io.to(sprintId).emit(
+            "active_participants",
+            Array.from(activeUsers[sprintId])
+        );
     });
 
-    socket.on("leave_retro", ({ retroId, email }) => {
-        if (!retroId || !email) return;
+    socket.on("leave_retro", ({ sprintId, userEmail }) => {
+        if (!sprintId || !userEmail) return;
 
-        if (activeUsers[retroId]) {
-            activeUsers[retroId].delete(email);
+        if (activeUsers[sprintId]) {
+            activeUsers[sprintId].delete(userEmail);
+            console.log(`${userEmail} retrosundan ayrıldı: ${sprintId}`);
 
-            console.log(`${email} retrosundan ayrıldı: ${retroId}`);
-
-            const activeList = Array.from(activeUsers[retroId]);
-            io.to(retroId).emit("active_participants", activeList);
+            io.to(sprintId).emit(
+                "active_participants",
+                Array.from(activeUsers[sprintId])
+            );
         }
 
-        socket.leave(retroId);
+        socket.leave(sprintId);
+    });
+
+    socket.on("disconnecting", () => {
+        console.log(`Socket ${socket.id} disconnecting...`);
     });
 
     socket.on("disconnect", () => {
-        console.log(`Kullanıcı ayrıldı: ${socket.id}`);
+        console.log(`Socket ${socket.id} disconnected.`);
     });
 });
 
