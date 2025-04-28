@@ -346,7 +346,10 @@ export const banParticipant = async (
         .json({ success: true, message: "Participant banned successfully." });
 };
 
-export const updateExpiredSprints = async (req: Request, res: Response): Promise<any> => {
+export const updateExpiredSprints = async (
+    req: Request,
+    res: Response
+): Promise<any> => {
     try {
         const expiredCount = await updateExpiredSprintsService();
         return res.status(200).json({
@@ -358,6 +361,58 @@ export const updateExpiredSprints = async (req: Request, res: Response): Promise
         return res.status(500).json({
             success: false,
             error: "Failed to update expired sprints.",
+        });
+    }
+};
+
+export const completeSprint = async (
+    req: Request,
+    res: Response
+): Promise<any> => {
+    try {
+        const { id } = req.params;
+        const userEmail = (req as any).userEmail;
+
+        if (!userEmail) {
+            return res.status(403).json({
+                success: false,
+                error: "Unauthorized: User email not found",
+            });
+        }
+
+        const sprintRef = db.collection("sprints").doc(id);
+        const sprintDoc = await sprintRef.get();
+
+        if (!sprintDoc.exists) {
+            return res.status(404).json({
+                success: false,
+                error: "Sprint not found",
+            });
+        }
+
+        const sprintData = sprintDoc.data();
+
+        if (sprintData?.createdBy !== userEmail) {
+            return res.status(403).json({
+                success: false,
+                error: "Only the creator of the sprint can complete it.",
+            });
+        }
+
+        await sprintRef.update({
+            expiresAt: new Date().toISOString(),
+            status: "expired",
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Sprint successfully completed.",
+        });
+    } catch (error) {
+        console.error("Error completing sprint:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Failed to complete sprint.",
         });
     }
 };
