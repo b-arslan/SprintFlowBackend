@@ -3,7 +3,6 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 
 const PORT = process.env.PORT || 5000;
-
 const server = createServer(app);
 
 export const io = new Server(server, {
@@ -18,57 +17,41 @@ const activeUsers: Record<string, Set<string>> = {};
 io.on("connection", (socket) => {
     console.log(`Bir kullanıcı bağlandı: ${socket.id}`);
 
-    socket.on("join_retro", ({ sprintId, userEmail }) => {
-        if (!sprintId || !userEmail) return;
+    socket.on("join_retro", ({ retroId, email }) => {
+        if (!retroId || !email) return;
 
-        socket.join(sprintId);
+        socket.join(retroId);
 
-        socket.data.userEmail = userEmail;
-        socket.data.sprintId = sprintId;
-
-        if (!activeUsers[sprintId]) {
-            activeUsers[sprintId] = new Set();
+        if (!activeUsers[retroId]) {
+            activeUsers[retroId] = new Set();
         }
-        activeUsers[sprintId].add(userEmail);
+        activeUsers[retroId].add(email);
 
-        console.log(`${userEmail} retrosuna katıldı: ${sprintId}`);
+        console.log(`${email} retrosuna katıldı: ${retroId}`);
 
-        io.to(sprintId).emit(
-            "active_participants",
-            Array.from(activeUsers[sprintId])
-        );
+        const activeList = Array.from(activeUsers[retroId]);
+
+        io.to(retroId).emit("active_participants", activeList);
+
+        socket.emit("active_participants", activeList);
     });
 
-    socket.on("leave_retro", ({ sprintId, userEmail }) => {
-        if (!sprintId || !userEmail) return;
+    socket.on("leave_retro", ({ retroId, email }) => {
+        if (!retroId || !email) return;
 
-        if (activeUsers[sprintId]) {
-            activeUsers[sprintId].delete(userEmail);
-            console.log(`${userEmail} retrosundan ayrıldı: ${sprintId}`);
+        if (activeUsers[retroId]) {
+            activeUsers[retroId].delete(email);
 
-            io.to(sprintId).emit(
-                "active_participants",
-                Array.from(activeUsers[sprintId])
-            );
+            console.log(`${email} retrosundan ayrıldı: ${retroId}`);
+
+            const activeList = Array.from(activeUsers[retroId]);
+            io.to(retroId).emit("active_participants", activeList);
         }
 
-        socket.leave(sprintId);
+        socket.leave(retroId);
     });
 
     socket.on("disconnect", () => {
-        const sprintId = socket.data.sprintId;
-        const userEmail = socket.data.userEmail;
-
-        if (sprintId && userEmail && activeUsers[sprintId]) {
-            activeUsers[sprintId].delete(userEmail);
-            console.log(`${userEmail} retrosundan disconnect ile ayrıldı.`);
-
-            io.to(sprintId).emit(
-                "active_participants",
-                Array.from(activeUsers[sprintId])
-            );
-        }
-
         console.log(`Kullanıcı ayrıldı: ${socket.id}`);
     });
 });
