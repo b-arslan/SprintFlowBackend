@@ -11,9 +11,12 @@ export const io = new Server(server, {
         origin: "https://sprint-flow-frontend.vercel.app",
         methods: ["GET", "POST"],
     },
+    transports: ["websocket", "polling"],
+    allowEIO3: true,
 });
 
 const activeUsers: Record<string, Set<string>> = {};
+const socketEmailMap: Record<string, { email: string; retroId: string }> = {};
 
 io.on("connection", (socket) => {
     console.log(`Bir kullanıcı bağlandı: ${socket.id}`);
@@ -23,13 +26,14 @@ io.on("connection", (socket) => {
 
         socket.join(retroId);
 
+        socketEmailMap[socket.id] = { email, retroId };
+
         if (!activeUsers[retroId]) {
             activeUsers[retroId] = new Set();
         }
         activeUsers[retroId].add(email);
 
         console.log(`${email} retrosuna katıldı: ${retroId}`);
-
         io.to(retroId).emit(
             "active_participants",
             Array.from(activeUsers[retroId])
@@ -51,6 +55,8 @@ io.on("connection", (socket) => {
                 Array.from(activeUsers[retroId])
             );
         }
+
+        delete socketEmailMap[socket.id];
     });
 
     socket.on("disconnecting", () => {
@@ -63,6 +69,25 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
         console.log(`Kullanıcı ayrıldı: ${socket.id}`);
+
+        const userInfo = socketEmailMap[socket.id];
+        if (userInfo) {
+            const { email, retroId } = userInfo;
+
+            if (activeUsers[retroId]) {
+                activeUsers[retroId].delete(email);
+
+                console.log(
+                    `${email} retrosundan bağlantı kesildi: ${retroId}`
+                );
+
+                io.to(retroId).emit(
+                    "active_participants",
+                    Array.from(activeUsers[retroId])
+                );
+            }
+            delete socketEmailMap[socket.id];
+        }
     });
 });
 
