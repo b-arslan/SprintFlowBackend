@@ -245,9 +245,15 @@ export const getMyJoinedSprints = async (
 
     const filteredSprints = sprintsData.filter((sprint) => sprint !== null);
 
+    const sortedSprints = filteredSprints.sort((a: any, b: any) => {
+        const aTime = a?.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const bTime = b?.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return bTime - aTime;
+    });
+
     res.status(200).json({
         success: true,
-        data: filteredSprints,
+        data: sortedSprints,
     });
 };
 
