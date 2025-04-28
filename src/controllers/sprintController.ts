@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { FieldValue } from "firebase-admin/firestore";
+import { updateExpiredSprintsService } from "../utils/updateExpiredSprintsService";
 
 export const createSprint = async (
     req: AuthenticatedRequest,
@@ -345,34 +346,9 @@ export const banParticipant = async (
         .json({ success: true, message: "Participant banned successfully." });
 };
 
-export const updateExpiredSprints = async (
-    res: Response
-): Promise<any> => {
+export const updateExpiredSprints = async (req: Request, res: Response): Promise<any> => {
     try {
-        const now = new Date();
-
-        const activeSprintsSnapshot = await db
-            .collection("sprints")
-            .where("status", "==", "active")
-            .get();
-
-        const batch = db.batch();
-        let expiredCount = 0;
-
-        activeSprintsSnapshot.forEach((doc) => {
-            const sprintData = doc.data();
-            const expiresAt = new Date(sprintData.expiresAt);
-
-            if (expiresAt < now) {
-                batch.update(doc.ref, { status: "expired" });
-                expiredCount++;
-            }
-        });
-
-        if (expiredCount > 0) {
-            await batch.commit();
-        }
-
+        const expiredCount = await updateExpiredSprintsService();
         return res.status(200).json({
             success: true,
             message: `${expiredCount} sprint(s) expired.`,
