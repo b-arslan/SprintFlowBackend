@@ -111,6 +111,13 @@ export const joinSprint = async (
         });
     }
 
+    if (sprintData?.status === "expired") {
+        return res.status(403).json({
+            success: false,
+            error: "This retrospective has already expired. You cannot join.",
+        });
+    }
+
     const userRef = db.collection("users").doc(email);
     await userRef.update({
         joinedRetros: FieldValue.arrayUnion(sprintId),
