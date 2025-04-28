@@ -246,8 +246,8 @@ export const getMyJoinedSprints = async (
     const filteredSprints = sprintsData.filter((sprint) => sprint !== null);
 
     const sortedSprints = filteredSprints.sort((a: any, b: any) => {
-        const aTime = a?.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-        const bTime = b?.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        const aTime = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
         return bTime - aTime;
     });
 
