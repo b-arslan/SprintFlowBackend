@@ -7,6 +7,7 @@ import teamRoutes from './routes/teamRoutes';
 import sprintRoutes from './routes/sprintRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
 import voteRoutes from './routes/voteRoutes';
+import { requestLogger } from "./middlewares/requestLogger";
 
 dotenv.config();
 
@@ -15,6 +16,8 @@ const app = express();
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
+
+app.use(requestLogger);
 
 app.get('/', (_, res) => {
   res.json({ message: 'SprintFlow backend is running!' });
