@@ -1,0 +1,14 @@
+name: Update Expired Sprints
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  call-update-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call backend endpoint
+        run: |
+          curl -X GET "${{ secrets.BACKEND_URL }}/api/v1/sprints/update-expired"
