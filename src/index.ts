@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 
 const PORT = process.env.PORT || 5000;
+
 const server = createServer(app);
 
 export const io = new Server(server, {
@@ -38,8 +39,11 @@ io.on("connection", (socket) => {
     socket.on("leave_retro", ({ retroId, email }) => {
         if (!retroId || !email) return;
 
+        socket.leave(retroId);
+
         if (activeUsers[retroId]) {
             activeUsers[retroId].delete(email);
+
             console.log(`${email} retrosundan ayrıldı: ${retroId}`);
 
             io.to(retroId).emit(
@@ -47,16 +51,18 @@ io.on("connection", (socket) => {
                 Array.from(activeUsers[retroId])
             );
         }
-
-        socket.leave(retroId);
     });
 
     socket.on("disconnecting", () => {
-        console.log(`Socket ${socket.id} disconnecting...`);
+        for (const room of socket.rooms) {
+            if (activeUsers[room]) {
+                console.log(`Socket rooms'dan ayrılıyor: ${room}`);
+            }
+        }
     });
 
     socket.on("disconnect", () => {
-        console.log(`Socket ${socket.id} disconnected.`);
+        console.log(`Kullanıcı ayrıldı: ${socket.id}`);
     });
 });
 
