@@ -59,6 +59,14 @@ io.on("connection", (socket) => {
         delete socketEmailMap[socket.id];
     });
 
+    socket.on("complete_retro", ({ retroId }) => {
+        if (!retroId) return;
+
+        console.log(`Retro tamamlandı: ${retroId}`);
+
+        io.to(retroId).emit("retro_completed", { retroId });
+    });
+
     socket.on("disconnecting", () => {
         for (const room of socket.rooms) {
             if (activeUsers[room]) {
